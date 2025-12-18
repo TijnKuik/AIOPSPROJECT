@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+import pika
+import time
+import random
 
 app = FastAPI()
 

@@ -16,10 +16,8 @@ inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 BASE_DIR = Path(__file__).resolve().parent  # api/src
 
 
-
-
-
-def connect_with_broker(retries=30, delay_s=2):
+# Tries to make connection
+def connect_with_broker(retries=3, delay_s=2):
     # Gets the port from the OS(containers (set in compose))
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
@@ -37,6 +35,8 @@ def connect_with_broker(retries=30, delay_s=2):
             time.sleep(delay_s)
     raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
 
+
+# Set up the channel and queues when starting up the API/WEB and closing the connection
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connection = connect_with_broker()
@@ -47,16 +47,19 @@ async def lifespan(app: FastAPI):
     app.state.rabbit_conn = connection
     app.state.rabbit_ch = channel
 
-    yield
+    yield # Closing the connection
     connection = getattr(app.state, "rabbit_conn", None)
     if connection and connection.is_open:
         connection.close()
         print("Connection closed!")
 
+# Set up the fastapi app
 app = FastAPI(lifespan=lifespan)
+
 # Serve static files (css, js, images)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
+# Setting up the home page
 @app.get("/")
 def home():
     return FileResponse(BASE_DIR / "static" / "index.html")

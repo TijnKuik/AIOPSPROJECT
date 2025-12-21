@@ -1,6 +1,9 @@
 import pika
 import time
 import random
+import os
+
+
 
 connection_parameters = pika.ConnectionParameters('localhost')
 connection = pika.BlockingConnection(connection_parameters)

@@ -1,15 +1,59 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 from pathlib import Path
 import pika
 import time
 import random
+import os
 
-app = FastAPI()
+
+
+# Get the queues from the compose files
+inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 
 BASE_DIR = Path(__file__).resolve().parent  # api/src
 
+
+
+
+
+def connect_with_broker(retries=30, delay_s=2):
+    # Gets the port from the OS(containers (set in compose))
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
+    port = int(os.getenv("RABBITMQ_PORT", 5672))
+
+    # Sets the connection parameters
+    connection_parameters = pika.ConnectionParameters(host=host, port=port)
+    last_error = None
+    
+    # Tries to connect to the broker x amount of time
+    for _ in range(retries):
+        try:
+            return pika.BlockingConnection(connection_parameters)
+        except pika.exceptions.AMQPConnectionError as e:
+            last_error = e
+            time.sleep(delay_s)
+    raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    connection = connect_with_broker()
+    print("Connection succesful!")
+    channel = connection.channel()
+    channel.queue_declare(queue=inference_queue)
+
+    app.state.rabbit_conn = connection
+    app.state.rabbit_ch = channel
+
+    yield
+    connection = getattr(app.state, "rabbit_conn", None)
+    if connection and connection.is_open:
+        connection.close()
+        print("Connection closed!")
+
+app = FastAPI(lifespan=lifespan)
 # Serve static files (css, js, images)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
@@ -17,5 +61,16 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 def home():
     return FileResponse(BASE_DIR / "static" / "index.html")
     
-#First ddocker build
-# Docker run
+@app.post("/send")
+def send_message():
+    # Send a few random messages
+    channel = app.state.rabbit_ch
+    message_id = 1
+
+    while message_id < 10:
+        message = f"Hello this is a message, ID: {message_id}"
+        channel.basic_publish(exchange="", routing_key=inference_queue, body=message.encode())
+        print(f"Send message: [{message}]")
+        time.sleep(random.randint(1, 4))
+        message_id +=1 
+    return {"send": True, "queue": inference_queue}

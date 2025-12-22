@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pathlib import Path
+import json
 import pika
 import time
 import random
@@ -15,8 +16,12 @@ inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 
 BASE_DIR = Path(__file__).resolve().parent  # api/src
 
+# To convert the data from web to JSON-ish with pydantic
+class AddRequest(BaseModel):
+    v1: float
+    v2: float
 
-# Tries to make connection
+# Tries to make connection with broker
 def connect_with_broker(retries=30, delay_s=2):
     # Gets the port from the OS(containers (set in compose))
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
@@ -65,27 +70,21 @@ def home():
     return FileResponse(BASE_DIR / "static" / "index.html")
     
 
-@app.post("/send")
-def send_message():
-    # Send a few random messages
-    channel = app.state.rabbit_ch
-    message_id = 1
-
-    while message_id < 10:
-        message = f"Hello this is a message, ID: {message_id}"
-        channel.basic_publish(exchange="", routing_key=inference_queue, body=message.encode())
-        print(f"Send message: [{message}]")
-        time.sleep(random.randint(1, 4))
-        message_id +=1 
-    return {"send": True, "queue": inference_queue}
-
-
-class AddRequest(BaseModel):
-    v1: float
-    v2: float
-
 @app.post("/add")
 def add(req: AddRequest):
-    new_value = req.v1 + req.v2
-    print(new_value)
-    return {"sum": new_value}
+    # Get the channel
+    channel = app.state.rabbit_ch
+
+    # Make a dictionairy of the data.
+    payload = {"v1": req.v1, "v2": req.v2}
+
+    # Sends the data to the broker
+    channel.basic_publish(
+        exchange="",
+        routing_key=inference_queue,
+        body=json.dumps(payload).encode("utf-8"), # Makes the dict. to json, then to bytes for RabbitMQ
+        properties=pika.BasicProperties(content_type="api/addition/json")
+    )
+    print("Data sent to broker!")
+    
+    return {"Status:": "Queued"}

@@ -1,7 +1,8 @@
 
 services:
   api:
-    build: .\services\api\
+    build: 
+      context: ./services/api
     ports:
       - "8000:8000"
     environment:
@@ -12,7 +13,8 @@ services:
     depends_on:
       - rabbitmq
   inference:
-    build: .\services\inference\
+    build: 
+      context: ./services/inference
     environment:
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: "5672"
@@ -27,14 +29,4 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-  db:
-    image: postgres:latest
-    container_name: postgresdb
-    environment:
-      POSTGRES_USER: guest
-      POSTGRES_PASSWORD: guest
-      POSTGRES_DB: appdb
-    ports:
-    - "5432:5432"
-    volumes:
-    - pgdata:/var/lib/postgresql/data
+

@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from pathlib import Path
 import pika
 import time
 import random
 import os
-
-
 
 # Get the queues from the compose files
 inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent  # api/src
 
 
 # Tries to make connection
-def connect_with_broker(retries=3, delay_s=2):
+def connect_with_broker(retries=30, delay_s=2):
     # Gets the port from the OS(containers (set in compose))
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
     port = int(os.getenv("RABBITMQ_PORT", 5672))
@@ -64,6 +64,7 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 def home():
     return FileResponse(BASE_DIR / "static" / "index.html")
     
+
 @app.post("/send")
 def send_message():
     # Send a few random messages
@@ -77,3 +78,14 @@ def send_message():
         time.sleep(random.randint(1, 4))
         message_id +=1 
     return {"send": True, "queue": inference_queue}
+
+
+class AddRequest(BaseModel):
+    v1: float
+    v2: float
+
+@app.post("/add")
+def add(req: AddRequest):
+    new_value = req.v1 + req.v2
+    print(new_value)
+    return {"sum": new_value}

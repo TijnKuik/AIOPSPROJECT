@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Send message</title>
-</head>
-<body>
+    <header>
+        <title>Sucks dick</title>
+    </header>
+    <body>
+        <label for="add_v1">Add numbers with the model: </label>
+        <input type="number" id="add_v1" name="add_v1">
+        <label for="add_v2">+</label>
+        <input type="number" id="add_v2" name="add_v2">
+        <button type="button" id="add_button">Add</button>
+        <br><br>
+        <label for="data_submit">Submit data to database: </label>
+        <input type="number" id="data_submit" name="data_submit">
+        <button type="button" id="submit_db">Submit to database</button>
 
-<button onclick="sendMessage()">Send message</button>
-
-<script>
-async function sendMessage() {
-  const res = await fetch("/send", {
-    method: "POST"
-  });
-
-  const data = await res.json();
-  console.log(data);
-  alert("Message sent!");
-}
-</script>
-
-</body>
+        <br><br>
+        <button type="button" id="retrain_m">Retrain value</button>
+        <label>Sum numbers with the model: </label>
+        <p id="output_value">0</p>
+        <script src="/static/js/app.js" defer></script>
+    </body>
 </html>

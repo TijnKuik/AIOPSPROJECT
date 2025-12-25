@@ -38,25 +38,24 @@ def connect_with_broker(retries=30, delay_s=2):
         except pika.exceptions.AMQPConnectionError as e:
             last_error = e
             time.sleep(delay_s)
-    raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
+    raise RuntimeError("- [API] Couldn't connect to RabbitMQ") from last_error
 
 
 # Set up the channel and queues when starting up the API/WEB and closing the connection
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     connection = connect_with_broker()
-    print("Connection succesful!")
-    channel = connection.channel()
-    channel.queue_declare(queue=inference_queue)
-
+    print("- [API] Connection succesful!")
+    
+    # Sets a global connection
     app.state.rabbit_conn = connection
-    app.state.rabbit_ch = channel
+    
 
     yield # Closing the connection
     connection = getattr(app.state, "rabbit_conn", None)
     if connection and connection.is_open:
         connection.close()
-        print("Connection closed!")
+        print("- [API] Connection closed!")
 
 # Set up the fastapi app
 app = FastAPI(lifespan=lifespan)
@@ -72,8 +71,11 @@ def home():
 
 @app.post("/add")
 def add(req: AddRequest):
-    # Get the channel
-    channel = app.state.rabbit_ch
+    # Get 
+    connection = app.state.rabbit_conn
+    channel = connection.channel()
+    channel.queue_declare(queue=inference_queue)
+
 
     # Make a dictionairy of the data.
     payload = {"v1": req.v1, "v2": req.v2}
@@ -85,6 +87,6 @@ def add(req: AddRequest):
         body=json.dumps(payload).encode("utf-8"), # Makes the dict. to json, then to bytes for RabbitMQ
         properties=pika.BasicProperties(content_type="api/addition/json")
     )
-    print("Data sent to broker!")
+    print("- [API] Data sent to broker!")
     
     return {"Status:": "Queued"}

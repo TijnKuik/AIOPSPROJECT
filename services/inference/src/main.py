@@ -6,12 +6,12 @@ import os
 
 inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 
-def addition(ch, method, properties, body):
+def callback(ch, method, properties, body):
     data = json.loads(body.decode("utf-8"))
     v1 = data['v1']
     v2 = data['v2']
-    print("Values: ", v1, " ", v2, " Sum: ", v1+v2)
-    ch.basic_ack(method.delivery_tag)
+    print("- [INFERENCE] Values: ", v1, " ", v2, " Sum: ", v1+v2)
+    ch.basic_ack(delivery_tag = method.delivery_tag)
 
 
 # Connect with broker
@@ -34,13 +34,15 @@ def connect_with_broker(retries=30, delay_s=2):
     raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
 
 connection = connect_with_broker()
+print("- [INFERENCE] Connection succesful!")
 channel = connection.channel()
 channel.queue_declare(queue=inference_queue)
+
 
 # This gives the consumer up to x numver of messages that are not Acked yet.
 channel.basic_qos(prefetch_count=1)
 
-channel.basic_consume(inference_queue, on_message_callback=addition)
+channel.basic_consume(inference_queue, on_message_callback=callback)
 
-print("Starting consuming")
+print("- [INFERENCE] Waiting for messages!")
 channel.start_consuming()

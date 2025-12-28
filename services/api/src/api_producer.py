@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from pathlib import Path
 import json
+import asyncio
 import pika
 import time
 import random
@@ -26,7 +27,7 @@ def connect_with_broker(retries=30, delay_s=2):
         except pika.exceptions.AMQPConnectionError as e:
             last_error = e
             time.sleep(delay_s)
-    raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
+    raise RuntimeError("- [API_PRODUCER] Couldn't connect to RabbitMQ") from last_error
 
 
 # Tries to make connection with broker

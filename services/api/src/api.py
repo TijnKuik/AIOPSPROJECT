@@ -72,12 +72,12 @@ def home():
 @app.post("/add")
 def add(req: AddRequest):
     global connection_producer; global connection_consumer
-
+    job_id = random.randint(10000, 99999)
     # Make a dictionairy of the data.
-    payload = {"v1": req.v1, "v2": req.v2}
-    
+    payload = {"job_id": job_id, "v1": req.v1, "v2": req.v2}
     producer.send_message_inference(connection_producer, payload)
-    
+    data = consumer.retrieve_job(job_id)
+    print(data)
     return {"Status:": "Queued"}
 
 

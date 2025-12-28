@@ -6,8 +6,23 @@ import os
 
 api_queue = os.getenv("API_QUEUE", "Letterbox")
 
+all_jobs = {}
+
+
+def retrieve_job(job_id):
+    try:
+        for _ in range(100):
+            if job_id in all_jobs.keys():
+                return all_jobs[job_id]
+            time.sleep(0.001)
+    except:
+        print(" - [API_CONSUMER] Job not existing.")
+
 def inference_result(ch, method, properties, body):
-    print(body)
+    data = json.loads(body.decode("utf-8"))
+    job_id = data["job_id"]
+    result = data["result"]
+    all_jobs.update({job_id: result})
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     

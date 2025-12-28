@@ -10,9 +10,11 @@ conn = None
 
 def callback(ch, method, properties, body):
     data = json.loads(body.decode("utf-8"))
+    job_id = data["job_id"]
     v1 = data['v1']
     v2 = data['v2']
     result = v1 + v2
+    new_payload = {"job_id": job_id, "result": result}
     
     print("- [INFERENCE] Values: ", v1, " ", v2, " Sum: ", result)
 
@@ -20,7 +22,7 @@ def callback(ch, method, properties, body):
     ch.basic_publish(
         exchange="",
         routing_key=api_queue,
-        body=str(result).encode('utf-8'), # Makes the dict. to json, then to bytes for RabbitMQ
+        body=json.dumps(new_payload).encode("utf-8"), # Makes the dict. to json, then to bytes for RabbitMQ
         properties=pika.BasicProperties(content_type="api/addition/json")
     )
     print("- [INFERENCE - Prod.] Data sent to broker!")

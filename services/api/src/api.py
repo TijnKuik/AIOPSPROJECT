@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     # start consumer in background
     consumer_thread = threading.Thread(
         target=start_consuming,
-        args=(connection_consumer,),
+        args=(connection_consumer),
         daemon=True
     )
     consumer_thread.start()

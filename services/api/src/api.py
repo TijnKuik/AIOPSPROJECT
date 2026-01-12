@@ -28,6 +28,7 @@ inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 
 BASE_DIR = Path(__file__).resolve().parent  # api/src
 
+# Create a unique ID
 def create_ID():
     return str(uuid.uuid4())
 

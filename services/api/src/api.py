@@ -35,6 +35,7 @@ def start_consuming(connection):
 async def lifespan(app: FastAPI):
     global connection_producer, connection_consumer, consumer_thread
 
+    # Setup the connection with the producer and the consumer
     connection_producer = producer.connect_with_broker()
     connection_consumer = consumer.connect_with_broker()
 
@@ -72,11 +73,11 @@ def home():
 @app.post("/add")
 def add(req: AddRequest):
     global connection_producer; global connection_consumer
-    job_id = random.randint(10000, 99999)
+    job_id = random.randint(10000, 99999) # Create a job ID for the request so that we get the right answer back, instead of just pulling the first from the stack
     # Make a dictionairy of the data.
     payload = {"job_id": job_id, "v1": req.v1, "v2": req.v2}
-    producer.send_message_inference(connection_producer, payload)
-    data = consumer.retrieve_job(job_id)
+    producer.send_message_inference(connection_producer, payload) # Send the message to the producer, who sents it to the broker
+    data = consumer.retrieve_job(job_id) # Retrieve the data
     print(data)
     return {"Status:": "Queued"}
 

@@ -10,7 +10,7 @@ import os
 # Get the queues from the compose files
 inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 
-
+# Tries to make a connection with the broker
 def connect_with_broker(retries=30, delay_s=2):
     # Gets the port from the OS(containers (set in compose))
     host = os.getenv("RABBITMQ_HOST", "rabbitmq")
@@ -30,7 +30,7 @@ def connect_with_broker(retries=30, delay_s=2):
     raise RuntimeError("- [API_PRODUCER] Couldn't connect to RabbitMQ") from last_error
 
 
-# Tries to make connection with broker
+# Sends message through a channel
 def send_message_inference(connection, payload):
     channel_inference = connection.channel()
     channel_inference.queue_declare(queue=inference_queue)

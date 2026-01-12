@@ -45,7 +45,7 @@ def connect_with_broker(retries=30, delay_s=2):
     raise RuntimeError("Couldn't connect to RabbitMQ") from last_error
 
 
-
+# Starts the consumer
 def consume_message_inference(connection):
     channel_api_inference = connection.channel()
     channel_api_inference.queue_declare(queue=api_queue)

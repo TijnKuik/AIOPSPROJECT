@@ -2,6 +2,7 @@ import pika
 import time
 import json
 import os
+import inference_worker as inference_worker
 
 inference_queue = os.getenv("MODEL_QUEUE", "Letterbox")
 api_queue = os.getenv("API_QUEUE", "Letterbox")
@@ -9,13 +10,14 @@ conn = None
 
 
 def callback(ch, method, properties, body):
-    data = json.loads(body.decode("utf-8"))
-    job_id = data["job_id"]
-    image = data["image"]
-    print(job_id)
-    prediction = "a"
-    new_payload = {"job_id": job_id, "prediction": image}
-
+    api_data = json.loads(body.decode("utf-8"))
+    job_id = api_data["job_id"]
+    image = api_data["image"]
+    inference_data = inference_worker.predict_gesture_from_base64(image)
+    gesture = inference_data["gesture"]
+    confidence = inference_data["confidence"]
+    new_payload = {"job_id": job_id, "gesture": gesture, "confidence": confidence}
+    print(new_payload)
     ch.queue_declare(queue=api_queue)
     ch.basic_publish(
         exchange="",

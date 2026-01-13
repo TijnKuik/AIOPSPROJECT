@@ -112,14 +112,17 @@ async def predict_gesture(request: PredictionRequest):
 
     # Retrieve the data which needs to be in the PredictionResponse structure
     data = consumer.retrieve_job(job_id)
+    print(f"- API   ::::: {data}")
+    predict_gesture = data[0]
+    confidence = data[1]
     proc_time = time.time() - start_time
-    print(f"- [TIME] {proc_time}")
+
 
     return {
         "job_id": job_id,
-        "gesture": "bitch",
+        "gesture": predict_gesture,
         'translation': "Yes",
-        'confidence': 1.293,
+        'confidence': confidence,
         'language': "little bitch",
         'processing_time_ms': time.time()-start_time
     }

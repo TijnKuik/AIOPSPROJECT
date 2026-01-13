@@ -35,8 +35,10 @@ def callback_function(ch, method, properties, body):
 
     data = json.loads(body.decode("utf-8"))
     job_id = data["job_id"]
-    prediction = data["prediction"]
-    all_jobs.update({job_id: prediction})
+    gesture = data["gesture"]
+    confidence = data["confidence"]
+    print('- [API-CONSUMER] ', data )
+    all_jobs.update({job_id: [gesture, confidence]})
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     
